@@ -18,3 +18,14 @@ class ProviderEvidence:
     phone: str | None
     provider_confidence: int | None
     source_url: str | None
+
+
+@dataclass(frozen=True)
+class ResolvedContact:
+    company_name: str
+    contact_name: str | None
+    contact_role: str | None
+    contact_email_or_phone: str | None
+    confidence_score: int
+    source: str
+    needs_human_review: bool
