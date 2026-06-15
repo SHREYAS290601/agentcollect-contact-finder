@@ -97,35 +97,48 @@ Explainable additive model (tune weights in implementation):
 
 ---
 
-## 6. Proposed Laravel file structure (minimal slice)
+## 6. Proposed Python CLI file structure (minimal slice)
 
-Follow existing `app/Modules/` convention; CLI entry via Artisan.
+The README says the challenge is language-agnostic. Choose Python because this slice is mainly CSV/JSON processing, evidence normalization, rule-based resolution, confidence scoring, and output writing.
 
 ```
-app/Modules/ContactFinder/
-  Data/
-    CompanyInput.php          # company_name, mailing_address
-    ProviderEvidence.php      # normalized per-provider facts + source_url
-    ResolvedContact.php       # output DTO
-  Services/
-    CompanyCsvReader.php      # read challenge/data/companies.csv
-    MockProviderLoader.php    # JSON lookup by exact company_name
-    EvidenceNormalizer.php    # registry | listing | enrichment → ProviderEvidence[]
-    ContactResolver.php       # pick name, role, email/phone; detect conflicts
-    ConfidenceScorer.php      # 0–100 + review flag
-    ContactOutputWriter.php   # write CSV/JSON to storage/app/contact_finder/
-app/Console/Commands/
-  ResolveContactsCommand.php  # artisan contact-finder:resolve [--limit=N]
-config/contact_finder.php     # paths to CSV + mock JSON (optional)
-tests/Unit/Modules/ContactFinder/
-  MockProviderLoaderTest.php
-  EvidenceNormalizerTest.php
-  ContactResolverTest.php
-  ConfidenceScorerTest.php
-  ResolveContactsCommandTest.php
+contact_finder/
+  __init__.py
+  cli.py                    # command-line entry point
+  models.py                 # CompanyInput, ProviderEvidence, ResolvedContact
+  readers.py                # read companies.csv
+  providers.py              # load mock JSON and lookup by exact company_name
+  normalizer.py             # registry/listing/enrichment → ProviderEvidence[]
+  resolver.py               # choose best candidate, detect conflicts
+  scorer.py                 # 0–100 confidence score + review rule
+  writer.py                 # write output CSV
+tests/
+  test_readers.py
+  test_providers.py
+  test_normalizer.py
+  test_resolver.py
+  test_scorer.py
+  test_cli.py
+outputs/
+  .gitkeep
 ```
 
-No new DB tables, HTTP routes, or queue jobs for this slice.
+Expected run command:
+
+```bash
+python -m contact_finder.cli \
+  --companies challenge/data/companies.csv \
+  --mocks challenge/mocks/enrichment_responses.json \
+  --output outputs/contact_finder_results.csv
+```
+
+Expected test command:
+
+```bash
+python -m pytest
+```
+
+No Laravel DB tables, migrations, HTTP routes, queues, or Artisan command are needed for this slice.
 
 ---
 
@@ -134,11 +147,12 @@ No new DB tables, HTTP routes, or queue jobs for this slice.
 | # | Commit | Scope |
 |---|--------|-------|
 | 1 | Add Stage B TODOs | This file |
-| 2 | Provider loader + evidence normalization | `MockProviderLoader`, `EvidenceNormalizer`, DTOs, `CompanyCsvReader` |
-| 3 | Contact resolver + confidence scorer | `ContactResolver`, `ConfidenceScorer`, role priority + conflict detection |
-| 4 | Output writer + Artisan command | `ContactOutputWriter`, `ResolveContactsCommand`, config paths |
-| 5 | Tests | Unit tests for each scenario in §4; command integration test |
-| 6 | Docs | `ABOUT.md` (from template), brief usage note in README or command `--help` |
+| 2 | Add Python package skeleton and data models | `contact_finder/`, `CompanyInput`, `ProviderEvidence`, `ResolvedContact` |
+| 3 | Add CSV reader, mock provider loader, and evidence normalizer | `readers.py`, `providers.py`, `normalizer.py` |
+| 4 | Add resolver and confidence scorer | `resolver.py`, `scorer.py`, role priority + conflict detection |
+| 5 | Add CSV output writer and CLI | `writer.py`, `cli.py`, output path handling |
+| 6 | Add tests | Unit tests for each scenario in §4; CLI integration test |
+| 7 | Add ABOUT.md and final usage docs | `ABOUT.md` (from template), brief usage note in README or CLI `--help` |
 
 **Slice scope:** process all 30 CSV rows (or `--limit` for dev); 18 have mock data, 12 exercise not-found paths.
 
