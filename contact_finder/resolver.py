@@ -43,11 +43,14 @@ def resolve_contact(company_name: str, evidence: list[ProviderEvidence]) -> Reso
     )
     needs_human_review = has_conflict or confidence_score < REVIEW_THRESHOLD
     emitted_method = chosen_method if not needs_human_review else None
+    emitted_role = chosen_role
+    if emitted_method is None and chosen_role == "business_contact":
+        emitted_role = None
 
     return ResolvedContact(
         company_name=company_name,
         contact_name=chosen_name,
-        contact_role=chosen_role,
+        contact_role=emitted_role,
         contact_email_or_phone=emitted_method,
         confidence_score=confidence_score,
         source=sources,
@@ -88,8 +91,8 @@ def _choose_name(evidence: list[ProviderEvidence]) -> str | None:
 
     registry_name = next((item.name for item in named_evidence if item.provider == "registry"), None)
     if registry_name:
-        return registry_name
-    return named_evidence[0].name
+        return _clean_parenthetical_name(registry_name)
+    return _clean_parenthetical_name(named_evidence[0].name)
 
 
 def _choose_role(evidence: list[ProviderEvidence], chosen_name: str | None) -> str | None:
@@ -99,6 +102,12 @@ def _choose_role(evidence: list[ProviderEvidence], chosen_name: str | None) -> s
     for item in evidence:
         if item.role and names_match(item.name, chosen_name) in {"exact", "soft"}:
             return item.role
+
+    for item in evidence:
+        parenthetical_role = _parenthetical_role(item.name)
+        if parenthetical_role and names_match(item.name, chosen_name) in {"exact", "soft"}:
+            return parenthetical_role
+
     return None
 
 
@@ -146,4 +155,20 @@ def _choose_phone(evidence: list[ProviderEvidence], chosen_name: str | None) -> 
             return phone
 
     return next((item.phone for item in evidence if item.phone), None)
+
+
+def _clean_parenthetical_name(name: str | None) -> str | None:
+    if not name:
+        return None
+    return name.split("(", 1)[0].strip()
+
+
+def _parenthetical_role(name: str | None) -> str | None:
+    if not name or "(" not in name or ")" not in name:
+        return None
+
+    role = name.split("(", 1)[1].split(")", 1)[0].strip()
+    if not role:
+        return None
+    return role[:1].upper() + role[1:].lower()
 

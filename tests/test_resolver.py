@@ -44,6 +44,7 @@ def test_generic_weak_enrichment_requires_review_and_blanks_contact_method() -> 
         "Riverside Print & Sign", _evidence_for("Riverside Print & Sign")
     )
 
+    assert resolved.contact_role is None
     assert resolved.confidence_score < 70
     assert resolved.contact_email_or_phone is None
     assert resolved.needs_human_review is True
@@ -57,6 +58,16 @@ def test_registry_only_without_contact_method_requires_review() -> None:
     assert resolved.contact_name == "Thomas Reed"
     assert resolved.contact_role == "Registered Agent"
     assert resolved.contact_email_or_phone is None
+    assert resolved.needs_human_review is True
+
+
+def test_parenthetical_role_is_extracted_without_changing_review_behavior() -> None:
+    resolved = resolve_contact("Lakeside Auto Glass", _evidence_for("Lakeside Auto Glass"))
+
+    assert resolved.contact_name == "Jeff"
+    assert resolved.contact_role == "Manager"
+    assert resolved.contact_email_or_phone is None
+    assert resolved.confidence_score < 70
     assert resolved.needs_human_review is True
 
 

@@ -69,7 +69,10 @@ def score_contact(
     if _registered_agent_without_contact(useful_evidence):
         score -= 15
 
-    return max(0, min(100, score))
+    clamped_score = max(0, min(100, score))
+    if useful_evidence:
+        clamped_score = max(5, clamped_score)
+    return min(95, clamped_score)
 
 
 def _name_agreement(evidence: list[ProviderEvidence]) -> str:

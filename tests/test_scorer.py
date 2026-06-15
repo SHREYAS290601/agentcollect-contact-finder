@@ -24,7 +24,7 @@ def test_score_is_high_for_strong_multi_source_match() -> None:
         chosen_name="Maria Gomez",
     )
 
-    assert score >= 70
+    assert 70 <= score <= 95
 
 
 def test_score_is_high_for_supported_two_source_match() -> None:
@@ -52,7 +52,7 @@ def test_generic_single_source_enrichment_scores_below_threshold() -> None:
         chosen_name=None,
     )
 
-    assert score < 70
+    assert 0 < score < 70
 
 
 def test_no_email_or_phone_scores_below_threshold() -> None:
@@ -66,7 +66,19 @@ def test_no_email_or_phone_scores_below_threshold() -> None:
         chosen_name="Thomas Reed",
     )
 
-    assert score < 70
+    assert 0 < score < 70
+
+
+def test_missing_provider_response_scores_zero() -> None:
+    score = score_contact(
+        evidence=[],
+        has_conflict=False,
+        chosen_contact_method=None,
+        chosen_role=None,
+        chosen_name=None,
+    )
+
+    assert score == 0
 
 
 def test_conflict_penalty_forces_review_even_with_phone_evidence() -> None:
